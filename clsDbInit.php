@@ -8,14 +8,22 @@
 
         function checkDbExist() {
             $isexist = false;
-            $conn = new mysqli($this->server, $this->dbuser, $this->dbpassword, $this->dbname);
+            $conn = new mysqli($this->server, $this->dbuser, $this->dbpassword);
             if ($conn->connect_error) {
-                //die ("database connection failed");
-                $isexist = false;
-            } else {
-                $isexist = true;
-                $conn->close();
-            }            
+                die ("database connection failed");
+                exit;
+            }
+            $sql = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'bbq'";
+            $result = mysqli_query($conn, $sql);
+            if ($result) {
+                $row = mysqli_num_rows($result);
+                if ($row) {
+                    $isexist = true;                    
+                } else {
+                    $isexist = false;
+                }
+            }   
+            $conn->close();                       
             return $isexist;
         }
 
@@ -24,7 +32,7 @@
             $conn = new mysqli($this->server, $this->dbuser, $this->dbpassword);
             // If database is not exist create one
             if (!mysqli_select_db($conn, $this->dbname)){
-                $sql = "CREATE DATABASE " . $this->dbname . " DEFAULT CHARSET utf8";
+                $sql = "CREATE DATABASE IF NOT EXISTS " . $this->dbname . " DEFAULT CHARSET utf8";
                 //echo($sql."<br/>");
                 if ($conn->query($sql) === TRUE) {
                     //echo "Database created successfully";
@@ -68,7 +76,8 @@
             } else {
                 // Second, create table if not exists
                 $sql  = "CREATE TABLE IF NOT EXISTS `tblbbq`(";
-                $sql .= "name TEXT, district TEXT, district_cn TEXT, address TEXT, longitude TEXT, latitude TEXT) ";
+                $sql .= "GIHS VARCHAR(20), name TEXT, district TEXT, district_cn TEXT, address TEXT, longitude TEXT, latitude TEXT, "; 
+                $sql .= "PRIMARY KEY (GIHS)) ";
                 $sql .= "DEFAULT CHARSET=utf8";
                 if (!$result=$conn->query($sql)){
                     //die ("failed to create table");
@@ -116,6 +125,7 @@
             $conn = new mysqli($this->server, $this->dbuser, $this->dbpassword, $this->dbname);
             $bbqs = json_decode($jsonFile, true);
             foreach ($bbqs as $bbq) {
+                $GIHS = $bbq['GIHS'];
                 $district = str_replace("'", "&apos;", $bbq['District_en']);
                 //$name = $bbq['Name_en']   .replace("'", "&quot;");
                 $district_cn = str_replace("'", "&apos;", $bbq['District_cn']);
@@ -123,7 +133,7 @@
                 $address = str_replace("'", "&apos;", $bbq['Address_en']);  
                 $longitude = str_replace("'", "&apos;", $bbq['Longitude']);
                 $latitude = str_replace("'", "&apos;", $bbq['Latitude']);        
-                $sql = "INSERT INTO tblbbq VALUES ('$name', '$district', '$district_cn', '$address', '$longitude', '$latitude')";
+                $sql = "INSERT INTO tblbbq VALUES ('$GIHS','$name','$district','$district_cn','$address','$longitude','$latitude')";
                 if (!$result=$conn->query($sql)) {
                     die ("insertion failed");
                     $isinserted = false;
@@ -159,12 +169,13 @@
                 return array("issuccess"=>false);
             }
             $resultArray = array();
-            $sql = "SELECT name, district, district_cn, address, longitude, latitude FROM tblbbq";
+            $sql = "SELECT GIHS, name, district, district_cn, address, longitude, latitude FROM tblbbq";
 			if ($dbresult=$conn->query($sql)) {
                 $dataArray = array();
 				// records retrieved
 				while ( $row=$dbresult->fetch_object()  ) {
 					$record = array();
+                    $record['GIHS'] = $row->GIHS;
 					$record['name'] = $row->name;
 					$record['district'] = $row->district;
 					$record['district_cn'] = $row->district_cn;

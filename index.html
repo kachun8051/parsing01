@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+    <head>
+        <script>
+            var request = new XMLHttpRequest();
+            //make resultArray as global variables
+            var resultArray;
+
+            function onLoadHandler(){
+                var url = "http://localhost/parsing01/controller.php/dbinit";
+                var url2 = "./controller.php/dbinit";		
+	            request.open("GET", url, true);	
+	            request.onreadystatechange = loadingPage;  // callback	
+	            request.send(null);
+            } 
+
+            function loadingPage(){
+                if (request.readyState==4) {
+		            if (request.status==200) {
+			            var serverData = request.responseText;
+			            var area = document.getElementById("displayArea");
+			            area.innerHTML = serverData;
+			            resultArray = JSON.parse(serverData);
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body onload="onLoadHandler()">
+        <div id="displayArea"></div>
+    </body>
+</html>
