@@ -1,11 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
     <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" 
+            rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" 
+            crossorigin="anonymous">
+	    <link href="./css/dropdown.css" rel="stylesheet">	
+	    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" 
+            integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" 
+            crossorigin="anonymous"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" 
+            integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" 
+            crossorigin="anonymous"></script>
         <script>
             var request = new XMLHttpRequest();
             //make resultArray as global variables
             var resultArray;
-
+            var htmlString;
+            
             function onLoadHandler(){
                 var url = "http://localhost/parsing01/controller.php/dbinit";
                 var url2 = "./controller.php/dbinit";		
@@ -13,20 +24,162 @@
 	            request.onreadystatechange = loadingPage;  // callback	
 	            request.send(null);
             } 
+            function onDeletedHandler(){
+                if (request.readyState==4) {
+		            if (request.status==200) {
 
+                        var respData = request.responseText;
+                        //alert(respData);
+                        //return;
+                        var objResp = JSON.parse(respData);
+                        //alert(objResp.issuccess);
+                        //return;
+                        console.log(objResp.issuccess);
+                        if (objResp.issuccess == true) {
+                            //close the dialog
+                            document.getElementById("btnModalCancel").click();
+                            //refresh the page
+                            var url = "http://localhost/parsing01/controller.php/barbecue";
+                            var url2 = "./controller.php/barbecue";		
+	                        request.open("GET", url, true);	
+	                        request.onreadystatechange = loadingPage;  // callback
+	                        request.send(null);
+                        }                        
+                    }
+                }                
+            }
             function loadingPage(){
                 if (request.readyState==4) {
 		            if (request.status==200) {
 			            var serverData = request.responseText;
 			            var area = document.getElementById("displayArea");
-			            area.innerHTML = serverData;
-			            resultArray = JSON.parse(serverData);
+			            //area.innerHTML = serverData;
+			            let resultObj = JSON.parse(serverData);
+                        if (resultObj.issuccess === false) {
+                            return;
+                        }
+                        resultArray = resultObj.data;
+                        //console.log("resultArray: " & $resultArray);
+                        if (resultArray == undefined) {
+                            return;
+                        }
+                        htmlString = "<table class='table table-hover'>";
+			            htmlString += "<tr><th>GIHS</th>";
+			            htmlString += "<th>district</th>";
+			            htmlString += "<th>district_cn</th>";
+			            htmlString += "<th>address</th>";
+			            htmlString += "<th>longitude</th>";
+                        htmlString += "<th>latitude</th></tr>"			
+			            resultArray.forEach(showRowRecord); 
+                        htmlString += "</ul>"
+			            area.innerHTML = htmlString;
                     }
                 }
             }
+            function showRowRecord(record) {
+	            htmlString += "<tr>";
+	            htmlString += "<td>" + record["GIHS"] + "</td>";
+	            htmlString += "<td>" + record["district"] + "</td>";
+	            htmlString += "<td>" + record["district_cn"] + "</td>";
+	            htmlString += "<td>" + record["address"] + "</td>";
+	            htmlString += "<td>" + record["longitude"] + "</td>";
+                htmlString += "<td>" + record["latitude"] + "</td>";
+                htmlString += "<td><img src='./images/bin.png' width=30 onclick='tryDelete(&quot;" + record["GIHS"] + "&quot;)' data-bs-toggle='modal' title='delete' data-bs-target='#confirmDeleteModal' /></td>";	            
+                htmlString += "<td><img src='./images/edit.png' width=30 onclick='tryEdit(&quot;" + record["GIHS"] + "&quot;)' data-bs-toggle='modal' title='edit' data-bs-target='#confirmEditModal' /></td>";
+	            htmlString += "</tr>";
+            }
+            //tryDelete pop up the modal
+            function tryDelete(gihs){
+                console.log("input gihs: " + gihs);
+                let m_GIHS, m_name, m_dist, mdist_cn, m_addr, m_long, m_lat;
+	            //alert(gihs);
+                if (resultArray == undefined) {
+                    return;
+                }
+                
+                // iterating the array to find gihs	
+	            for (item of resultArray) {
+		            if (item['GIHS']==gihs) {
+			            m_GIHS = item['GIHS'];
+			            m_name = item['name'];	
+			            m_dist = item['district'];
+			            m_dist_cn = item['district_cn'];
+			            m_addr = item['address'];	
+			            m_long = item['longitude'];
+                        m_lat = item['latitude'];
+                        console.log("found!");
+			            break;
+		            }
+	            }	
+	            document.getElementById("modalGIHS").value = m_GIHS;
+	            document.getElementById("modalName").value = m_name;
+	            document.getElementById("modalDistrict").value = m_dist;
+	            document.getElementById("modalDistrictCN").value = m_dist_cn;
+	            document.getElementById("modalAddress").value = m_addr;
+	            document.getElementById("modalLongitude").value = m_long;
+	            document.getElementById("modalLatitude").value = m_lat;
+            
+            }
+            
+            function goDelete(){
+                var gihs = document.getElementById("modalGIHS").value;
+                //var url = "http://localhost/parsing01/controller.php/barbecue";
+                var url = "http://localhost/parsing01/controller.php/barbecue/GIHS/" + gihs;
+                //var url2 = "./controller.php/barbecue";		
+	            request.open("DELETE", url, true);	
+	            request.onreadystatechange = onDeletedHandler;  // callback
+	            //request.send('sendingdata=' + JSON.stringify(objParams));
+                request.send(null);
+            }
+            
         </script>
     </head>
     <body onload="onLoadHandler()">
         <div id="displayArea"></div>
+        <!-- Modal for confirmation of deletion -->
+        <div class="modal fade" id="confirmDeleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmDeleteModalLabel">Delete Facility</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">GIHS</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalGIHS" readonly>
+                        </div>          
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">Name</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalName" readonly>
+                        </div>          
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">District</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalDistrict" readonly>            
+                        </div>	
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">District (CN)</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalDistrictCN" readonly>
+                        </div>	
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">Address</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalAddress" readonly>
+                        </div>			
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">Longitude</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalLongitude" readonly>
+                        </div>	
+                        <div class="input-group mb-3">
+                            <span class="input-group-text" id="basic-addon1">Latitude</span>
+                            <input type="text" class="form-control" aria-describedby="basic-addon1" id="modalLatitude" readonly>
+                        </div>			
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="btnModalCancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="goDelete()">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

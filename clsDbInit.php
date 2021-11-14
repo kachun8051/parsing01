@@ -165,7 +165,7 @@
             $conn = new mysqli($this->server, $this->dbuser, $this->dbpassword, $this->dbname);
             if ($conn->connect_error) {
                 //$successArray = array();
-                die ("database connection failed");
+                //die ("database connection failed");
                 return array("issuccess"=>false);
             }
             $resultArray = array();
